@@ -120,22 +120,42 @@ export class GameLoader implements IGameLoader {
     return undefined;
   }
 
-  public async restoreGameAt(gameId: GameId, saveId: number): Promise<IGame> {
-    const current = await this.getGame(gameId);
-    if (current === undefined) {
-      throw new Error('Cannot find game');
-    }
-    const currentSaveId = current.lastSaveId;
-    const serializedGame = await Database.getInstance().getGameVersion(gameId, saveId);
-    const game = Game.deserialize(serializedGame);
-    const deletes = (currentSaveId - saveId) - 1;
-    if (deletes > 0) {
-      await Database.getInstance().deleteGameNbrSaves(gameId, deletes);
-    }
-    await this.add(game);
-    game.undoCount++;
-    return game;
+public async restoreGameAt(gameId: GameId, saveId: number): Promise<IGame> {
+  console.log('Restoring game with gameId:', gameId, 'and saveId:', saveId);
+  
+  const current = await this.getGame(gameId);
+  if (current === undefined) {
+    console.error('Cannot find game with gameId:', gameId);
+    throw new Error('Cannot find game');
   }
+  
+  console.log('Found current game:', current);
+  
+  const currentSaveId = current.lastSaveId;
+  const serializedGame = await Database.getInstance().getGameVersion(gameId, saveId);
+  
+  console.log('Serialized game:', serializedGame);
+  
+  const game = Game.deserialize(serializedGame);
+  const deletes = (currentSaveId - saveId) - 1;
+  
+  console.log('Number of saves to delete:', deletes);
+  
+  if (deletes > 0) {
+    await Database.getInstance().deleteGameNbrSaves(gameId, deletes);
+    console.log('Deleted', deletes, 'saves for game with gameId:', gameId);
+  }
+  
+  await this.add(game);
+  console.log('Added game:', game);
+  
+  game.undoCount++;
+  
+  console.log('Restored game:', game);
+  
+  return game;
+}
+
 
   public mark(gameId: GameId) {
     this.cache.mark(gameId);
