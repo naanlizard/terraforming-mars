@@ -99,6 +99,7 @@ async function start() {
 
   const port = process.env.PORT || 8080;
   console.log(`Starting ${raw_settings.head}, built at ${raw_settings.builtAt}`);
+  console.log(`Hi Garrett!`);
   console.log(`Starting server on port ${port}`);
 
   server.listen(port);
