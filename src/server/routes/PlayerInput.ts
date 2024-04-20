@@ -100,7 +100,11 @@ private async performUndo(_req: Request, res: Response, ctx: Context, player: IP
 }
 
 private processInput(req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
-  console.log('Processing input for player:', player.id);
+  // TODO(kberg): Find a better place for this optimization.
+  console.log('Request object:', req);
+  console.log('Response object:', res);
+  console.log('Context object:', ctx);
+  console.log('Player object:', player);
 
   // Clear warnings for cards in player's tableau
   player.tableau.forEach((card) => card.warnings.clear());
