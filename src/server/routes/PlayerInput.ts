@@ -87,44 +87,60 @@ private async performUndo(_req: Request, res: Response, ctx: Context, player: IP
 }
 With these console
 
-  private processInput(req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
-    // TODO(kberg): Find a better place for this optimization.
-    player.tableau.forEach((card) => card.warnings.clear());
-    return new Promise((resolve) => {
-      let body = '';
-      req.on('data', (data) => {
-        body += data.toString();
-      });
-      req.once('end', async () => {
-        try {
-          const entity = JSON.parse(body);
-          validateRunId(entity);
-          if (this.isWaitingForUndo(player, entity)) {
-            await this.performUndo(req, res, ctx, player);
-          } else {
-            player.process(entity);
-            responses.writeJson(res, Server.getPlayerModel(player));
-          }
-          resolve();
-        } catch (e) {
-          if (!(e instanceof AppError || e instanceof InputError)) {
-            console.warn('Error processing input from player', e);
-          }
-          // TODO(kberg): use responses.ts, though that changes the output.
-          res.writeHead(statusCode.badRequest, {
-            'Content-Type': 'application/json',
-          });
+private processInput(req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
+  console.log('Processing input for player:', player.id);
 
-          const id = e instanceof AppError ? e.id : undefined;
-          const message = e instanceof Error ? e.message : String(e);
-          res.write(JSON.stringify({id: id, message: message}));
-          res.end();
-          resolve();
-        }
-      });
+  // Clear warnings for cards in player's tableau
+  player.tableau.forEach((card) => card.warnings.clear());
+  console.log('Cleared warnings for cards in player\'s tableau');
+
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', (data) => {
+      body += data.toString();
     });
-  }
+    req.once('end', async () => {
+      console.log('Received complete request body:', body);
+      try {
+        const entity = JSON.parse(body);
+        console.log('Parsed JSON entity:', entity);
+
+        validateRunId(entity);
+        console.log('Validated run ID');
+
+        if (this.isWaitingForUndo(player, entity)) {
+          console.log('Player is waiting for undo operation');
+          await this.performUndo(req, res, ctx, player);
+        } else {
+          console.log('Processing entity for player');
+          player.process(entity);
+          console.log('Processed entity for player');
+          responses.writeJson(res, Server.getPlayerModel(player));
+          console.log('Sent updated player model in response');
+        }
+        resolve();
+      } catch (e) {
+        console.error('Error processing input from player:', e);
+
+        if (!(e instanceof AppError || e instanceof InputError)) {
+          console.warn('Non-application error encountered:', e);
+        }
+        // TODO(kberg): use responses.ts, though that changes the output.
+        res.writeHead(statusCode.badRequest, {
+          'Content-Type': 'application/json',
+        });
+
+        const id = e instanceof AppError ? e.id : undefined;
+        const message = e instanceof Error ? e.message : String(e);
+        res.write(JSON.stringify({ id: id, message: message }));
+        res.end();
+        console.log('Sent error response to client');
+        resolve();
+      }
+    });
+  });
 }
+
 function validateRunId(entity: any) {
   if (entity.runId !== undefined && runId !== undefined) {
     if (entity.runId !== runId) {
