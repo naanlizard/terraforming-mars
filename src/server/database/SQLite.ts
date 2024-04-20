@@ -269,17 +269,23 @@ export class SQLite implements IDatabase {
     });
   }
 
-  protected asyncGet(sql: string, params?: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, function(err: Error | null, row: any) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
+protected asyncGet(sql: string, params?: any): Promise<any> {
+  console.log('Executing SQL query:', sql);
+  console.log('Query Parameters:', params);
+  
+  return new Promise((resolve, reject) => {
+    this.db.get(sql, params, function(err: Error | null, row: any) {
+      if (err) {
+        console.error('Error executing SQL query:', err);
+        reject(err);
+      } else {
+        console.log('Query Result:', row);
+        resolve(row);
+      }
     });
-  }
+  });
+}
+
 
   protected asyncAll(sql: string, params?: any): Promise<Array<any>> {
     return new Promise((resolve, reject) => {
