@@ -63,20 +63,33 @@ export class PlayerInput extends Handler {
   }
 
 private async performUndo(_req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
-  console.log('Performing undo operation for player:', player.id);
+      /**
+     * The `lastSaveId` property is incremented during every `takeAction`.
+     * The first save being decremented is the increment during `takeAction` call
+     * The second save being decremented is the action that was taken
+     */
+  
+  console.log('Performing undo operation for player:', player);
+  console.log('Request object:', _req);
+  console.log('Response object:', res);
+  console.log('Context object:', ctx);
 
   const lastSaveId = player.game.lastSaveId - 2;
   console.log('Last save ID to restore:', lastSaveId);
 
   try {
+    console.log('Restoring game for player:', player.id, 'from saveId:', lastSaveId);
     const game = await ctx.gameLoader.restoreGameAt(player.game.id, lastSaveId);
     if (game === undefined) {
       console.log('Unable to retrieve game from database for undo operation');
       player.game.log('Unable to perform undo operation. Error retrieving game from database. Please try again.', () => {}, { reservedFor: player });
     } else {
-      console.log('Game successfully restored from database');
+      console.log('Game successfully restored from database. Updating player instance');
       // pull most recent player instance
+      console.log('Retrieving player instance from restored game:', player.id);
       player = game.getPlayerById(player.id);
+      console.log('Player instance updated after restoration:', player.id);
+
     }
   } catch (err) {
     console.error('Error performing undo operation:', err);
@@ -85,7 +98,6 @@ private async performUndo(_req: Request, res: Response, ctx: Context, player: IP
   console.log('Sending updated player model in response:', player);
   responses.writeJson(res, Server.getPlayerModel(player));
 }
-With these console
 
 private processInput(req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
   console.log('Processing input for player:', player.id);
