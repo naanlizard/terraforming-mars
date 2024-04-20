@@ -62,26 +62,30 @@ export class PlayerInput extends Handler {
     return false;
   }
 
-  private async performUndo(_req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
-    /**
-     * The `lastSaveId` property is incremented during every `takeAction`.
-     * The first save being decremented is the increment during `takeAction` call
-     * The second save being decremented is the action that was taken
-     */
-    const lastSaveId = player.game.lastSaveId - 2;
-    try {
-      const game = await ctx.gameLoader.restoreGameAt(player.game.id, lastSaveId);
-      if (game === undefined) {
-        player.game.log('Unable to perform undo operation. Error retrieving game from database. Please try again.', () => {}, {reservedFor: player});
-      } else {
-        // pull most recent player instance
-        player = game.getPlayerById(player.id);
-      }
-    } catch (err) {
-      console.error(err);
+private async performUndo(_req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
+  console.log('Performing undo operation for player:', player.id);
+
+  const lastSaveId = player.game.lastSaveId - 2;
+  console.log('Last save ID to restore:', lastSaveId);
+
+  try {
+    const game = await ctx.gameLoader.restoreGameAt(player.game.id, lastSaveId);
+    if (game === undefined) {
+      console.log('Unable to retrieve game from database for undo operation');
+      player.game.log('Unable to perform undo operation. Error retrieving game from database. Please try again.', () => {}, { reservedFor: player });
+    } else {
+      console.log('Game successfully restored from database');
+      // pull most recent player instance
+      player = game.getPlayerById(player.id);
     }
-    responses.writeJson(res, Server.getPlayerModel(player));
+  } catch (err) {
+    console.error('Error performing undo operation:', err);
   }
+
+  console.log('Sending updated player model in response:', player);
+  responses.writeJson(res, Server.getPlayerModel(player));
+}
+With these console
 
   private processInput(req: Request, res: Response, ctx: Context, player: IPlayer): Promise<void> {
     // TODO(kberg): Find a better place for this optimization.
